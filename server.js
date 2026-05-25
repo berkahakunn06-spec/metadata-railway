@@ -1,3 +1,23 @@
+const express = require("express");
+const cors = require("cors");
+const multer = require("multer");
+const axios = require("axios");
+const path = require("path");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(__dirname));
+
+const upload = multer({
+    dest: "uploads/"
+});
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
 app.post("/upload", upload.array("files"), async (req, res) => {
 
     try {
@@ -9,140 +29,21 @@ app.post("/upload", upload.array("files"), async (req, res) => {
 
         for (const file of req.files) {
 
-            let endpoint = "";
-            let model = "";
-
-            // =================
-            // PROVIDER
-            // =================
-
-            if (provider === "grok") {
-
-                endpoint =
-                    "https://api.x.ai/v1/chat/completions";
-
-                model =
-                    "grok-2-latest";
-
-            }
-
-            else if (provider === "openai") {
-
-                endpoint =
-                    "https://api.openai.com/v1/chat/completions";
-
-                model =
-                    "gpt-4o-mini";
-
-            }
-
-            else if (provider === "openrouter") {
-
-                endpoint =
-                    "https://openrouter.ai/api/v1/chat/completions";
-
-                model =
-                    "openai/gpt-4o-mini";
-
-            }
-
-            // =================
-            // REQUEST AI
-            // =================
-
-            const response = await axios.post(
-
-                endpoint,
-
-                {
-                    model: model,
-
-                    messages: [
-                        {
-                            role: "user",
-                            content:
-`Generate Adobe Stock metadata.
-
-Filename:
-${file.originalname}
-
-Return JSON only:
-
-{
-"title":"",
-"description":"",
-"keywords":[]
-}`
-                        }
-                    ]
-
-                },
-
-                {
-                    headers: {
-
-                        Authorization:
-                            `Bearer ${apiKey}`,
-
-                        "Content-Type":
-                            "application/json"
-
-                    }
-                }
-
-            );
-
-            const text =
-                response.data.choices[0].message.content;
-
-            // =================
-            // CLEAN JSON
-            // =================
-
-            let clean = text
-                .replace(/```json/g, "")
-                .replace(/```/g, "")
-                .trim();
-
-            let parsed;
-
-            try {
-
-                parsed = JSON.parse(clean);
-
-            } catch {
-
-                parsed = {
-
-                    title:
-                        "AI Generated Metadata",
-
-                    description:
-                        "Professional Adobe Stock image.",
-
-                    keywords: [
-                        "ai",
-                        "adobe stock",
-                        "design"
-                    ]
-
-                };
-
-            }
-
             results.push({
 
-                filename:
-                    file.originalname,
+                filename: file.originalname,
 
-                title:
-                    parsed.title,
+                title: "AI Generated Metadata",
 
                 description:
-                    parsed.description,
+                    "Professional Adobe Stock image.",
 
-                keywords:
-                    parsed.keywords
+                keywords: [
+                    "ai",
+                    "adobe stock",
+                    "design",
+                    "technology"
+                ]
 
             });
 
@@ -156,20 +57,24 @@ Return JSON only:
 
         });
 
-    }
+    } catch (err) {
 
-    catch (err) {
-
-        console.log(err.response?.data || err.message);
+        console.log(err);
 
         res.status(500).json({
-
-            error:
-                err.response?.data ||
-                err.message
-
+            error: err.message
         });
 
     }
+
+});
+
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+
+    console.log(
+        "Server running on port " + PORT
+    );
 
 });
