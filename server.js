@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-const axios = require("axios");
 const path = require("path");
 
 const app = express();
@@ -11,70 +10,57 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const upload = multer({
-    dest: "uploads/"
+  dest: "uploads/"
 });
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.post("/upload", upload.array("files"), async (req, res) => {
 
-    try {
+  try {
 
-        const provider = req.body.provider;
-        const apiKey = req.body.apiKey;
+    const results = [];
 
-        const results = [];
+    for (const file of req.files) {
 
-        for (const file of req.files) {
-
-            results.push({
-
-                filename: file.originalname,
-
-                title: "AI Generated Metadata",
-
-                description:
-                    "Professional Adobe Stock image.",
-
-                keywords: [
-                    "ai",
-                    "adobe stock",
-                    "design",
-                    "technology"
-                ]
-
-            });
-
-        }
-
-        res.json({
-
-            success: true,
-            total: results.length,
-            data: results
-
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.status(500).json({
-            error: err.message
-        });
+      results.push({
+        filename: file.originalname,
+        title: "AI Generated Metadata",
+        description: "Professional Adobe Stock image",
+        keywords: [
+          "ai",
+          "technology",
+          "design",
+          "digital",
+          "future"
+        ]
+      });
 
     }
+
+    res.json({
+      success: true,
+      total: results.length,
+      failed: 0,
+      data: results
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
 
 });
 
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-
-    console.log(
-        "Server running on port " + PORT
-    );
-
+  console.log("Server running on " + PORT);
 });
