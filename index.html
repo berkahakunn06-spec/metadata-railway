@@ -1,121 +1,205 @@
 <script>
 
-function updateFiles() {
+/* FILE LIST */
 
-    const files = document.getElementById("files").files;
+function updateFiles(){
 
-    document.getElementById("totalFiles").innerText = files.length;
+    const files =
+    document.getElementById(
+    "files"
+    ).files;
+
+    document.getElementById(
+    "totalFiles"
+    ).innerText =
+    files.length;
 
     let html = "";
 
-    for (let file of files) {
+    for(let file of files){
 
         html += `
         <div class="file-item">
-            <span>${file.name}</span>
-            <span>${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+
+            <span>
+            ${file.name}
+            </span>
+
+            <span>
+            ${(file.size/1024/1024).toFixed(2)} MB
+            </span>
+
         </div>
         `;
 
     }
 
-    document.getElementById("fileList").innerHTML =
-        html || "Belum ada file";
+    document.getElementById(
+    "fileList"
+    ).innerHTML =
+    html || "Belum ada file";
 
 }
 
-function pickFolder(event) {
 
-    const files = event.target.files;
+/* PICK FOLDER */
 
-    if (files.length > 0) {
+function pickFolder(event){
+
+    const files =
+    event.target.files;
+
+    if(files.length > 0){
 
         const folder =
-            files[0].webkitRelativePath.split("/")[0];
+        files[0]
+        .webkitRelativePath
+        .split("/")[0];
 
-        document.getElementById("savefolder").value = folder;
+        document.getElementById(
+        "savefolder"
+        ).value =
+        folder;
 
-        document.getElementById("folderName").innerText =
-            "📁 " + folder;
+        document.getElementById(
+        "folderName"
+        ).innerText =
+        "📁 " + folder;
 
-        document.getElementById("saveLocation").innerText =
-            folder;
+        document.getElementById(
+        "saveLocation"
+        ).innerText =
+        folder;
 
     }
 
 }
 
-async function uploadFiles() {
+
+/* UPLOAD */
+
+async function uploadFiles(){
 
     const files =
-        document.getElementById("files").files;
+    document.getElementById(
+    "files"
+    ).files;
 
     const provider =
-        document.getElementById("provider").value;
+    document.getElementById(
+    "provider"
+    ).value;
 
     const apiKey =
-        document.getElementById("apikey").value;
+    document.getElementById(
+    "apikey"
+    ).value;
 
     const savefolder =
-        document.getElementById("savefolder").value || "metadata";
+    document.getElementById(
+    "savefolder"
+    ).value || "metadata";
 
-    if (files.length === 0) {
+    if(files.length === 0){
 
         alert("Pilih file dulu");
         return;
 
     }
 
-    document.getElementById("processingFiles").innerText =
-        files.length;
+    document.getElementById(
+    "processingFiles"
+    ).innerText =
+    files.length;
 
-    const formData = new FormData();
+    document.getElementById(
+    "result"
+    ).textContent =
+    "⏳ Processing metadata...";
 
-    formData.append("provider", provider);
-    formData.append("apiKey", apiKey);
-    formData.append("savefolder", savefolder);
+    const formData =
+    new FormData();
 
-    for (let file of files) {
+    formData.append(
+    "provider",
+    provider
+    );
 
-        formData.append("files", file);
+    formData.append(
+    "apiKey",
+    apiKey
+    );
+
+    formData.append(
+    "savefolder",
+    savefolder
+    );
+
+    for(let file of files){
+
+        formData.append(
+        "files",
+        file
+        );
 
     }
 
-    try {
+    try{
 
-        const response = await fetch(
-            "https://repository-name-metadatachann-production-9a05.up.railway.app/upload",
-            {
-                method: "POST",
-                body: formData
-            }
+        const response =
+        await fetch(
+
+        "https://repository-name-metadatachann-production-9a05.up.railway.app/upload",
+
+        {
+            method:"POST",
+            body:formData
+        }
+
         );
 
-        const text = await response.text();
+        const text =
+        await response.text();
 
         console.log(text);
 
-        if (!response.ok) {
+        let data;
 
-            document.getElementById("result").textContent =
-                "❌ SERVER ERROR:\n\n" + text;
+        try{
+
+            data =
+            JSON.parse(text);
+
+        }catch(parseError){
+
+            document.getElementById(
+            "result"
+            ).textContent =
+
+            "❌ SERVER ERROR\n\n" +
+            text;
 
             return;
 
         }
 
-        const data = JSON.parse(text);
+        document.getElementById(
+        "completedFiles"
+        ).innerText =
+        data.total || 0;
 
-        document.getElementById("completedFiles").innerText =
-            data.total || 0;
+        document.getElementById(
+        "processingFiles"
+        ).innerText =
+        0;
 
-        document.getElementById("processingFiles").innerText =
-            0;
-
-        document.getElementById("failedFiles").innerText =
-            data.failed || 0;
+        document.getElementById(
+        "failedFiles"
+        ).innerText =
+        data.failed || 0;
 
         let resultText = `
+
 ╔══════════════════════════════╗
 🌸 MetadataChann ✨
 ╚══════════════════════════════╝
@@ -140,61 +224,110 @@ ${provider}
 ${savefolder}
 
 ━━━━━━━━━━━━━━━━━━
+
 `;
 
-        if (data.data) {
+        if(data.data){
 
-            data.data.forEach(item => {
+            data.data.forEach(item=>{
+
+                let keywords = [];
+
+                if(Array.isArray(item.keywords)){
+
+                    keywords =
+                    item.keywords;
+
+                }else{
+
+                    keywords =
+                    (item.keywords || "")
+                    .split(",")
+                    .map(k=>k.trim());
+
+                }
+
+                keywords =
+                [...new Set(
+                    keywords.map(
+                        k=>k.toLowerCase()
+                    )
+                )];
+
+                keywords =
+                keywords.slice(0,49);
 
                 resultText += `
 
 📄 FILE:
-${item.filename}
+${item.filename || "-"}
 
 📝 TITLE:
-${item.title}
+${item.title || "-"}
 
 🏷️ KEYWORDS:
-${Array.isArray(item.keywords)
-        ? item.keywords.join(", ")
-        : item.keywords}
+${keywords.join(", ")}
 
 📖 DESCRIPTION:
-${item.description}
+${item.description || "-"}
 
 ━━━━━━━━━━━━━━━━━━
+
 `;
 
             });
 
         }
 
-        document.getElementById("result").textContent =
-            resultText;
+        resultText += `
 
-    } catch (err) {
+🌸 Metadata generated successfully
+🌸 Adobe Stock Ready
+
+`;
+
+        document.getElementById(
+        "result"
+        ).textContent =
+        resultText;
+
+    }catch(err){
 
         console.log(err);
 
-        document.getElementById("failedFiles").innerText =
-            files.length;
+        document.getElementById(
+        "failedFiles"
+        ).innerText =
+        files.length;
 
-        document.getElementById("processingFiles").innerText =
-            0;
+        document.getElementById(
+        "processingFiles"
+        ).innerText =
+        0;
 
-        document.getElementById("result").textContent =
-            "❌ FETCH ERROR:\n\n" + err;
+        document.getElementById(
+        "result"
+        ).textContent =
+
+        "❌ FETCH ERROR\n\n" +
+        err;
 
     }
 
 }
 
-function copyResult() {
+
+/* COPY */
+
+function copyResult(){
 
     const text =
-        document.getElementById("result").textContent;
+    document.getElementById(
+    "result"
+    ).textContent;
 
-    navigator.clipboard.writeText(text);
+    navigator.clipboard
+    .writeText(text);
 
     alert("Copied!");
 
