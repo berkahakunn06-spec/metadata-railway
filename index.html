@@ -1,336 +1,288 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MetadataChann - AI Metadata Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff3fc7, #7a2cff, #4338ff);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
 
-/* FILE LIST */
+        /* Dekoras Bunga */
+        .flower { position: absolute; font-size: 75px; opacity: 0.3; animation: float 5s infinite ease-in-out; pointer-events: none; }
+        .flower1 { top: 20px; left: 20px; }
+        .flower2 { top: 120px; right: 50px; }
+        .flower3 { bottom: 40px; left: 50px; }
+        .flower4 { bottom: 40px; right: 50px; }
+        .flower5 { top: 300px; left: 70px; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
 
-function updateFiles(){
+        body::before, body::after {
+            content: ""; position: absolute; width: 500px; height: 500px;
+            border-radius: 50%; filter: blur(100px); opacity: 0.25; z-index: 0;
+        }
+        body::before { background: #ff8ae2; top: -200px; left: -200px; }
+        body::after { background: #6b7cff; bottom: -200px; right: -200px; }
 
-    const files =
-    document.getElementById(
-    "files"
-    ).files;
+        .container {
+            width: 100%; max-width: 1400px; height: 92vh;
+            display: grid; grid-template-columns: 400px 1fr; gap: 20px; z-index: 10;
+        }
 
-    document.getElementById(
-    "totalFiles"
-    ).innerText =
-    files.length;
+        .left, .right {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 25px;
+            overflow-y: auto;
+        }
 
-    let html = "";
+        .logo { font-size: 38px; font-weight: 900; color: white; margin-bottom: 5px; }
+        .logo span { color: #ffb8ec; }
+        .subtitle { color: white; opacity: 0.8; margin-bottom: 25px; font-size: 14px; }
 
-    for(let file of files){
+        label { display: block; margin-top: 15px; margin-bottom: 8px; color: white; font-weight: bold; font-size: 14px; }
+        input, select {
+            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            outline: none; font-size: 14px; background: white;
+        }
 
-        html += `
-        <div class="file-item">
+        button {
+            width: 100%; border: none; padding: 15px; border-radius: 15px;
+            margin-top: 20px; font-size: 16px; font-weight: bold;
+            cursor: pointer; color: white;
+            background: linear-gradient(90deg, #ff4fd8, #7b2ff7);
+            transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button:disabled { background: #666; cursor: not-allowed; transform: none; }
 
-            <span>
-            ${file.name}
-            </span>
+        .files-box, .info, .folder-box {
+            margin-top: 20px; background: rgba(255, 255, 255, 0.05);
+            padding: 15px; border-radius: 15px; color: white;
+        }
 
-            <span>
-            ${(file.size/1024/1024).toFixed(2)} MB
-            </span>
+        .file-item {
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 13px;
+        }
 
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat { background: rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 18px; color: white; text-align: center; }
+        .stat-number { font-size: 28px; font-weight: bold; }
+
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: white; }
+        .copy-btn { width: auto; padding: 8px 15px; margin: 0; font-size: 13px; }
+
+        pre {
+            flex: 1; background: #03112c; color: #35ff84; border-radius: 20px;
+            padding: 20px; overflow: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5;
+        }
+
+        .save-info { margin-top: 12px; color: white; font-size: 13px; opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="flower flower1">🌸</div>
+<div class="flower flower2">🌺</div>
+<div class="flower flower3">🌷</div>
+<div class="flower flower4">💮</div>
+<div class="flower flower5">🌸</div>
+
+<div class="container">
+    <!-- LEFT SIDE -->
+    <div class="left">
+        <div class="logo">Metadata<span>Chann</span> ✨</div>
+        <div class="subtitle">AI Metadata Generator for Adobe Stock</div>
+
+        <label>🌸 AI Provider</label>
+        <select id="provider">
+            <option value="openai">OpenAI</option>
+            <option value="grok">Grok</option>
+            <option value="gemini">Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+        </select>
+
+        <label>🔑 API Key</label>
+        <input type="password" id="apikey" placeholder="Paste your API key here"/>
+
+        <label>📂 Choose Files</label>
+        <input type="file" id="files" multiple onchange="updateFiles()"/>
+
+        <label>📁 Simpan ke Folder (Nama Saja)</label>
+        <input type="text" id="savefolder" placeholder="Contoh: metadata_stock" />
+        
+        <div class="files-box">
+            <h3 style="font-size: 15px; margin-bottom: 10px;">📁 Selected Files</h3>
+            <div id="fileList" style="max-height: 150px; overflow-y: auto;">Belum ada file</div>
         </div>
-        `;
 
+        <button id="btnGenerate" onclick="uploadFiles()">✨ Generate Metadata</button>
+
+        <div class="info">
+            <h3 style="font-size: 14px; margin-bottom: 5px;">🌸 Cara Pakai</h3>
+            <p style="font-size: 12px; line-height: 1.6;">
+                1. Masukkan API Key & Pilih Provider<br>
+                2. Upload gambar (JPG/PNG)<br>
+                3. Ketik nama folder tujuan<br>
+                4. Klik Generate Metadata
+            </p>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right">
+        <div class="stats">
+            <div class="stat"><div class="stat-number" id="totalFiles">0</div><div style="font-size: 11px;">Total</div></div>
+            <div class="stat"><div class="stat-number" id="completedFiles">0</div><div style="font-size: 11px;">Success</div></div>
+            <div class="stat"><div class="stat-number" id="processingFiles">0</div><div style="font-size: 11px;">Process</div></div>
+            <div class="stat"><div class="stat-number" id="failedFiles">0</div><div style="font-size: 11px;">Failed</div></div>
+        </div>
+
+        <div class="result-header">
+            <h2>🌸 Results ✨</h2>
+            <button class="copy-btn" onclick="copyResult()">📋 Copy Result</button>
+        </div>
+
+        <pre id="result">✨ Metadata result will appear here...</pre>
+
+        <div class="save-info">
+            📁 Status Simpan: <b id="saveLocation">Menunggu proses...</b>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFiles() {
+        const files = document.getElementById("files").files;
+        document.getElementById("totalFiles").innerText = files.length;
+        
+        let html = "";
+        for (let file of files) {
+            html += `<div class="file-item">
+                <span>${file.name.length > 25 ? file.name.substring(0, 22) + "..." : file.name}</span>
+                <span>${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+            </div>`;
+        }
+        document.getElementById("fileList").innerHTML = html || "Belum ada file";
     }
 
-    document.getElementById(
-    "fileList"
-    ).innerHTML =
-    html || "Belum ada file";
+    async function uploadFiles() {
+        const fileInput = document.getElementById("files");
+        const provider = document.getElementById("provider").value;
+        const apiKey = document.getElementById("apikey").value;
+        const savefolder = document.getElementById("savefolder").value || "metadata_output";
+        const btn = document.getElementById("btnGenerate");
 
-}
+        if (fileInput.files.length === 0) return alert("Silahkan pilih file gambar terlebih dahulu!");
+        if (!apiKey) return alert("Masukkan API Key!");
 
+        // Reset UI
+        btn.disabled = true;
+        btn.innerText = "⌛ Processing...";
+        document.getElementById("processingFiles").innerText = fileInput.files.length;
+        document.getElementById("completedFiles").innerText = "0";
+        document.getElementById("failedFiles").innerText = "0";
+        document.getElementById("result").textContent = "🚀 Analysing images, please wait...";
 
-/* PICK FOLDER */
-
-function pickFolder(event){
-
-    const files =
-    event.target.files;
-
-    if(files.length > 0){
-
-        const folder =
-        files[0]
-        .webkitRelativePath
-        .split("/")[0];
-
-        document.getElementById(
-        "savefolder"
-        ).value =
-        folder;
-
-        document.getElementById(
-        "folderName"
-        ).innerText =
-        "📁 " + folder;
-
-        document.getElementById(
-        "saveLocation"
-        ).innerText =
-        folder;
-
-    }
-
-}
-
-
-/* UPLOAD */
-
-async function uploadFiles(){
-
-    const files =
-    document.getElementById(
-    "files"
-    ).files;
-
-    const provider =
-    document.getElementById(
-    "provider"
-    ).value;
-
-    const apiKey =
-    document.getElementById(
-    "apikey"
-    ).value;
-
-    const savefolder =
-    document.getElementById(
-    "savefolder"
-    ).value || "metadata";
-
-    if(files.length === 0){
-
-        alert("Pilih file dulu");
-        return;
-
-    }
-
-    document.getElementById(
-    "processingFiles"
-    ).innerText =
-    files.length;
-
-    document.getElementById(
-    "result"
-    ).textContent =
-    "⏳ Processing metadata...";
-
-    const formData =
-    new FormData();
-
-    formData.append(
-    "provider",
-    provider
-    );
-
-    formData.append(
-    "apiKey",
-    apiKey
-    );
-
-    formData.append(
-    "savefolder",
-    savefolder
-    );
-
-    for(let file of files){
-
-        formData.append(
-        "files",
-        file
-        );
-
-    }
-
-    try{
-
-        const response =
-        await fetch(
-
-        "https://repository-name-metadatachann-production-9a05.up.railway.app/upload",
-
-        {
-            method:"POST",
-            body:formData
+        const formData = new FormData();
+        formData.append("provider", provider);
+        formData.append("apiKey", apiKey);
+        formData.append("savefolder", savefolder);
+        for (let file of fileInput.files) {
+            formData.append("files", file);
         }
 
-        );
-
-        const text =
-        await response.text();
-
-        console.log(text);
-
-        let data;
-
-        try{
-
-            data =
-            JSON.parse(text);
-
-        }catch(parseError){
-
-            document.getElementById(
-            "result"
-            ).textContent =
-
-            "❌ SERVER ERROR\n\n" +
-            text;
-
-            return;
-
-        }
-
-        document.getElementById(
-        "completedFiles"
-        ).innerText =
-        data.total || 0;
-
-        document.getElementById(
-        "processingFiles"
-        ).innerText =
-        0;
-
-        document.getElementById(
-        "failedFiles"
-        ).innerText =
-        data.failed || 0;
-
-        let resultText = `
-
-╔══════════════════════════════╗
-🌸 MetadataChann ✨
-╚══════════════════════════════╝
-
-✅ METADATA SUCCESS
-
-━━━━━━━━━━━━━━━━━━
-
-📁 TOTAL FILE:
-${data.total || 0}
-
-✅ COMPLETED:
-${data.total || 0}
-
-❌ FAILED:
-${data.failed || 0}
-
-🤖 AI:
-${provider}
-
-💾 SAVE:
-${savefolder}
-
-━━━━━━━━━━━━━━━━━━
-
-`;
-
-        if(data.data){
-
-            data.data.forEach(item=>{
-
-                let keywords = [];
-
-                if(Array.isArray(item.keywords)){
-
-                    keywords =
-                    item.keywords;
-
-                }else{
-
-                    keywords =
-                    (item.keywords || "")
-                    .split(",")
-                    .map(k=>k.trim());
-
-                }
-
-                keywords =
-                [...new Set(
-                    keywords.map(
-                        k=>k.toLowerCase()
-                    )
-                )];
-
-                keywords =
-                keywords.slice(0,49);
-
-                resultText += `
-
-📄 FILE:
-${item.filename || "-"}
-
-📝 TITLE:
-${item.title || "-"}
-
-🏷️ KEYWORDS:
-${keywords.join(", ")}
-
-📖 DESCRIPTION:
-${item.description || "-"}
-
-━━━━━━━━━━━━━━━━━━
-
-`;
-
+        try {
+            const response = await fetch("https://repository-name-metadatachann-production-9a05.up.railway.app/upload", {
+                method: "POST",
+                body: formData
             });
 
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${await response.text()}`);
+            }
+
+            const data = await response.json();
+            displayResult(data, provider, savefolder);
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById("failedFiles").innerText = fileInput.files.length;
+            document.getElementById("result").textContent = "❌ ERROR:\n\n" + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "✨ Generate Metadata";
+            document.getElementById("processingFiles").innerText = "0";
         }
-
-        resultText += `
-
-🌸 Metadata generated successfully
-🌸 Adobe Stock Ready
-
-`;
-
-        document.getElementById(
-        "result"
-        ).textContent =
-        resultText;
-
-    }catch(err){
-
-        console.log(err);
-
-        document.getElementById(
-        "failedFiles"
-        ).innerText =
-        files.length;
-
-        document.getElementById(
-        "processingFiles"
-        ).innerText =
-        0;
-
-        document.getElementById(
-        "result"
-        ).textContent =
-
-        "❌ FETCH ERROR\n\n" +
-        err;
-
     }
 
-}
+    function displayResult(data, provider, savefolder) {
+        document.getElementById("completedFiles").innerText = data.total || 0;
+        document.getElementById("failedFiles").innerText = data.failed || 0;
+        document.getElementById("saveLocation").innerText = "Tersimpan di folder: " + savefolder;
 
+        let resultText = `╔══════════════════════════════════════╗\n`;
+        resultText += `      🌸  MetadataChann Result ✨       \n`;
+        resultText += `╚══════════════════════════════════════╝\n\n`;
+        resultText += `✅ STATUS: SUCCESS\n`;
+        resultText += `🤖 AI: ${provider.toUpperCase()}\n`;
+        resultText += `📁 FOLDER: ${savefolder}\n`;
+        resultText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-/* COPY */
+        if (data.data && Array.isArray(data.data)) {
+            data.data.forEach((item, index) => {
+                // Proses Keywords
+                let keywords = [];
+                if (Array.isArray(item.keywords)) {
+                    keywords = item.keywords;
+                } else if (typeof item.keywords === 'string') {
+                    keywords = item.keywords.split(',').map(k => k.trim());
+                }
 
-function copyResult(){
+                // Filter unik & lowercase
+                keywords = [...new Set(keywords.map(k => k.toLowerCase()))].filter(k => k !== "");
 
-    const text =
-    document.getElementById(
-    "result"
-    ).textContent;
+                // Tambahkan keyword tambahan jika kurang dari 49
+                const extraKeywords = ["technology", "digital", "innovation", "modern", "creative", "abstract", "background", "high tech", "futuristic", "professional"];
+                for (let extra of extraKeywords) {
+                    if (keywords.length >= 49) break;
+                    if (!keywords.includes(extra)) keywords.push(extra);
+                }
 
-    navigator.clipboard
-    .writeText(text);
+                const finalKeywords = keywords.slice(0, 49).join(", ");
+                const finalTitle = item.title && item.title.length > 10 ? item.title : "Futuristic Digital Concept Illustration";
 
-    alert("Copied!");
+                resultText += `[${index + 1}] FILE: ${item.filename}\n`;
+                resultText += `📝 TITLE: ${finalTitle}\n`;
+                resultText += `🏷️ KEYWORDS (${keywords.slice(0,49).length}/49):\n${finalKeywords}\n`;
+                resultText += `📖 DESC: ${item.description || "No description available."}\n`;
+                resultText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            });
+        }
 
-}
+        resultText += `🌸 Metadata generated successfully for Adobe Stock.`;
+        document.getElementById("result").textContent = resultText;
+    }
 
+    function copyResult() {
+        const text = document.getElementById("result").textContent;
+        if (text.includes("will appear here")) return;
+        navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+    }
 </script>
+
+</body>
+</html>
