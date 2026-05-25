@@ -1,124 +1,175 @@
-const express = require("express");
-const multer = require("multer");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
+app.post("/upload", upload.array("files"), async (req, res) => {
 
-const app = express();
+    try {
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(__dirname));
+        const provider = req.body.provider;
+        const apiKey = req.body.apiKey;
 
-const upload = multer({
-  dest: "uploads/"
-});
+        const results = [];
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
+        for (const file of req.files) {
 
-app.post("/upload", upload.array("images"), async (req, res) => {
+            let endpoint = "";
+            let model = "";
 
-  try {
+            // =================
+            // PROVIDER
+            // =================
 
-    const files = req.files || [];
+            if (provider === "grok") {
 
-    const results = files.map(file => {
+                endpoint =
+                    "https://api.x.ai/v1/chat/completions";
 
-      return {
+                model =
+                    "grok-2-latest";
 
-        filename: file.originalname,
+            }
 
-        title:
-          "Futuristic Technology Interface Background",
+            else if (provider === "openai") {
 
-        description:
-          "Professional futuristic digital technology interface with modern neon cyberpunk design.",
+                endpoint =
+                    "https://api.openai.com/v1/chat/completions";
 
-        keywords: [
+                model =
+                    "gpt-4o-mini";
 
-          "technology",
-          "digital",
-          "innovation",
-          "modern",
-          "creative",
-          "professional",
-          "business",
-          "future",
-          "abstract",
-          "background",
-          "design",
-          "visual",
-          "interface",
-          "automation",
-          "artificial intelligence",
-          "cyberpunk",
-          "gradient",
-          "neon",
-          "software",
-          "dashboard",
-          "user interface",
-          "desktop",
-          "online",
-          "network",
-          "system",
-          "virtual",
-          "workspace",
-          "application",
-          "data",
-          "computer",
-          "coding",
-          "developer",
-          "web",
-          "tech",
-          "futuristic",
-          "ui design",
-          "productivity",
-          "electronics",
-          "smart technology",
-          "digital workspace",
-          "modern interface",
-          "high tech",
-          "glowing",
-          "virtual system",
-          "innovation concept",
-          "future technology",
-          "tech background",
-          "cyber interface",
-          "advanced system"
+            }
 
-        ]
+            else if (provider === "openrouter") {
 
-      };
+                endpoint =
+                    "https://openrouter.ai/api/v1/chat/completions";
 
-    });
+                model =
+                    "openai/gpt-4o-mini";
 
-    res.json({
+            }
 
-      total: results.length,
-      failed: 0,
-      data: results
+            // =================
+            // REQUEST AI
+            // =================
 
-    });
+            const response = await axios.post(
 
-  } catch (err) {
+                endpoint,
 
-    res.status(500).json({
-      error: err.message
-    });
+                {
+                    model: model,
 
-  }
+                    messages: [
+                        {
+                            role: "user",
+                            content:
+`Generate Adobe Stock metadata.
 
-});
+Filename:
+${file.originalname}
 
-const PORT =
-process.env.PORT || 3000;
+Return JSON only:
 
-app.listen(PORT, () => {
+{
+"title":"",
+"description":"",
+"keywords":[]
+}`
+                        }
+                    ]
 
-  console.log(
-    "Server running on port " + PORT
-  );
+                },
+
+                {
+                    headers: {
+
+                        Authorization:
+                            `Bearer ${apiKey}`,
+
+                        "Content-Type":
+                            "application/json"
+
+                    }
+                }
+
+            );
+
+            const text =
+                response.data.choices[0].message.content;
+
+            // =================
+            // CLEAN JSON
+            // =================
+
+            let clean = text
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+
+            let parsed;
+
+            try {
+
+                parsed = JSON.parse(clean);
+
+            } catch {
+
+                parsed = {
+
+                    title:
+                        "AI Generated Metadata",
+
+                    description:
+                        "Professional Adobe Stock image.",
+
+                    keywords: [
+                        "ai",
+                        "adobe stock",
+                        "design"
+                    ]
+
+                };
+
+            }
+
+            results.push({
+
+                filename:
+                    file.originalname,
+
+                title:
+                    parsed.title,
+
+                description:
+                    parsed.description,
+
+                keywords:
+                    parsed.keywords
+
+            });
+
+        }
+
+        res.json({
+
+            success: true,
+            total: results.length,
+            data: results
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(err.response?.data || err.message);
+
+        res.status(500).json({
+
+            error:
+                err.response?.data ||
+                err.message
+
+        });
+
+    }
 
 });
